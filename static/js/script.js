@@ -75,6 +75,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Show error message
                     alert(data.message);
                 }
+            
+                if (response.status === 401) {
+                    alert('You must be logged in to like or unlike images.');
+                }
             })
             .catch(error => {
                 console.error('Error:', error);

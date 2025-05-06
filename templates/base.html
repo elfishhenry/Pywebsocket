@@ -32,10 +32,19 @@
                         <a class="nav-link" href="{{ url_for('upload') }}">Upload Image</a>
                     </li>
                 </ul>
-                <form class="d-flex" action="{{ url_for('search') }}" method="get">
+                <form class="d-flex me-3" action="{{ url_for('search') }}" method="get">
                     {{ search_form.query(class="form-control me-2", placeholder="Search images...") }}
                     <button class="btn btn-outline-light" type="submit">Search</button>
                 </form>
+                <div class="d-flex">
+                    {% if session.get('user_id') %}
+                        <a class="btn btn-outline-primary me-2" href="{{ url_for('settings') }}">Settings</a>
+                        <a class="btn btn-outline-danger" href="{{ url_for('logout') }}">Logout</a>
+                    {% else %}
+                        <a class="btn btn-outline-success me-2" href="{{ url_for('login') }}">Login</a>
+                        <a class="btn btn-outline-primary" href="{{ url_for('signup') }}">Sign Up</a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </nav>

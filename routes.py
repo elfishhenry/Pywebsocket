@@ -2,11 +2,13 @@ import os
 import uuid
 import io
 from datetime import datetime
-from flask import render_template, request, redirect, url_for, flash, jsonify, abort, current_app, send_from_directory
+from flask import render_template, request, redirect, url_for, flash, jsonify, abort, current_app, send_from_directory, session
 from werkzeug.utils import secure_filename
 from sqlalchemy import or_
 from PIL import Image as PILImage
 from pillow_heif import register_heif_opener
+from forms import SignupForm, LoginForm
+from models import User, Image
 
 # Register HEIF opener to handle Apple HEIC/HEIF formats
 register_heif_opener()
@@ -15,6 +17,9 @@ from app import app, db, csrf
 from models import Image, Like
 from forms import ImageUploadForm, SearchForm
 from utils import get_client_ip
+if 'user_id' in session:
+    user_id = session['user_id']
+    user = User.query.get(user_id)
 
 # Add context processor to make 'now' variable available in all templates
 @app.context_processor
@@ -47,7 +52,8 @@ def upload():
         
         try:
             # First, save the uploaded file to a temporary location
-            tmp_path = os.path.join('/tmp', unique_filename)
+            tmp_dir = os.getenv('TMP', '/tmp')  # Use 'TMP' environment variable for cross-platform compatibility
+            tmp_path = os.path.join(tmp_dir, unique_filename)
             f.save(tmp_path)
             
             # Open the saved file with PIL
@@ -176,3 +182,84 @@ def uploaded_file(filename):
     except Exception as e:
         app.logger.error(f"Error serving file {filename}: {str(e)}")
         abort(404)
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    form = SignupForm()
+    if form.validate_on_submit():
+        # Create a new user
+        user = User(username=form.username.data, email=form.email.data)
+        user.set_password(form.password.data)
+        db.session.add(user)
+        db.session.commit()
+        
+        # Automatically log in the user after signing up
+        session['user_id'] = user.id
+        session['is_admin'] = user.is_admin
+        
+        flash('Account created successfully! You are now logged in.', 'success')
+        return redirect(url_for('index'))  # Redirect to the home page
+    
+    return render_template('signup.html', form=form)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user and user.check_password(form.password.data):
+            session['user_id'] = user.id
+            session['is_admin'] = user.is_admin
+            flash('Login successful!', 'success')
+            return redirect(url_for('index'))
+        flash('Invalid email or password', 'danger')
+    return render_template('login.html', form=form)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You have logged out.', 'info')
+    return redirect(url_for('login'))
+
+@app.route('/admin/delete_image/<int:image_id>', methods=['POST'])
+def delete_image(image_id):
+    if not session.get('is_admin'):
+        flash('Access denied.', 'danger')
+        return redirect(url_for('index'))
+    image = Image.query.get_or_404(image_id)
+    db.session.delete(image)
+    db.session.commit()
+    flash('Image deleted successfully!', 'success')
+    return redirect(url_for('index'))
+
+@app.route('/settings', methods=['GET', 'POST'])
+def settings():
+    # Add logic for the settings page
+    return render_template('settings.html')
+
+@app.route('/like/<int:image_id>', methods=['POST'])
+def like_image(image_id):
+    # Ensure the user is logged in
+    if 'user_id' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    # Fetch the user and image
+    user_id = session['user_id']
+    user = User.query.get(user_id)
+    image = Image.query.get(image_id)
+
+    if not image:
+        return jsonify({'error': 'Image not found'}), 404
+
+    # Toggle like/unlike
+    if user in image.likes:
+        image.likes.remove(user)
+        db.session.commit()
+        return jsonify({'message': 'Image unliked', 'likes_count': len(image.likes)})
+    else:
+        image.likes.append(user)
+        db.session.commit()
+        return jsonify({'message': 'Image liked', 'likes_count': len(image.likes)})
+    
+
+
