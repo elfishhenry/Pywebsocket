@@ -43,8 +43,8 @@
                             <div class="likes" data-image-id="{{ image.id }}">
                                 {% if session.get('user_id') %}
                                     <button class="btn btn-sm btn-outline-danger like-btn" 
-                                            data-liked="{{ 'true' if user in image.likes else 'false' }}">
-                                        <i class="fas fa-heart"></i> <span class="like-count">{{ len(image.likes) }}</span>
+                                    data-liked="{{ 'true' if image.id in liked_images else 'false' }}">
+                                        <i class="fas fa-heart"></i> <span class="like-count">{{ image.likes }}</span>
                                     </button>
                                 {% else %}
                                     <span class="text-muted">Log in to like images</span>
