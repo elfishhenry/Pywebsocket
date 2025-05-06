@@ -14,7 +14,6 @@
                 <div class="text-end">
                     {% if session.get('user_id') %}
                         <a class="btn btn-outline-primary me-2" href="{{ url_for('settings') }}">Settings</a>
-                        <a class="btn btn-outline-danger" href="{{ url_for('logout') }}">Logout</a>
                     {% else %}
                         <a class="btn btn-outline-success me-2" href="{{ url_for('login') }}">Login</a>
                         <a class="btn btn-outline-primary" href="{{ url_for('signup') }}">Sign Up</a>

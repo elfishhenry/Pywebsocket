@@ -25,13 +25,8 @@ csrf = CSRFProtect(app)
 app.secret_key = os.environ.get("SESSION_SECRET", "dev_secret_key")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)  # Needed for url_for to generate with HTTPS
 
-# Configure the database with a persistent path if needed
-persistent_db_path = os.getenv("DATABASE_DIR", "instance")  # Path to store DB
-os.makedirs(persistent_db_path, exist_ok=True)  # Ensure directory exists
-
-db_file = os.path.join(persistent_db_path, "imageshare.db")
-
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", f"sqlite:///{db_file}")
+# Configure the database
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///imageshare.db")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
@@ -44,8 +39,9 @@ app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024  # 16MB max upload size
 
 # Ensure upload directory exists
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+from flask_login import LoginManager
+from models import User
 
-# Initialize Flask-Login
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
@@ -53,27 +49,24 @@ login_manager.login_view = 'login'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+
+
+
 # Custom ModelView to restrict access to admins only
 class AdminModelView(ModelView):
     def is_accessible(self):
         return current_user.is_authenticated and getattr(current_user, 'is_admin', False)
-
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('login'))
 
-# Admin setup
 admin = Admin(app, name='ImageShare Admin', template_mode='bootstrap4')
 admin.add_view(AdminModelView(User, db.session))
 admin.add_view(AdminModelView(Image, db.session))
 
 # Initialize the app with the extension
-db.init_app(app)
+db.init_app(app)  # Ensure this is called with the correct `db` instance
 
-# Create all tables if they do not exist
-if not os.path.exists(db_file):
-    logging.info(f"Database not found at {db_file}. Creating database...")
-    with app.app_context():
-        import models  # noqa: F401
-        db.create_all()
-else:
-    logging.info(f"Database found at {db_file}. No need to create.")
+with app.app_context():
+    # Import models here so tables are created
+    import models  # noqa: F401
+    db.create_all()
