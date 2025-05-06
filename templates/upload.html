@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Image - ImageShare{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0">Upload a New Image</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data" class="upload-form" id="upload-form">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.title.label(class="form-label") }}
+                            {% if form.title.errors %}
+                                {{ form.title(class="form-control is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.title.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.title(class="form-control") }}
+                            {% endif %}
+                            <div class="form-text">Give your image a descriptive title</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {% if form.description.errors %}
+                                {{ form.description(class="form-control is-invalid", rows=5) }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.description(class="form-control", rows=5) }}
+                            {% endif %}
+                            <div class="form-text">Optional: Add details about your image</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.image.label(class="form-label") }}
+                            <div class="input-group">
+                                {{ form.image(class="form-control" + (" is-invalid" if form.image.errors else ""), accept="image/*", id="image-input") }}
+                                {% if form.image.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.image.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="form-text">Accepted formats: JPG, JPEG, PNG, GIF, HEIC, HEIF, TIFF, BMP (Max size: 16MB)</div>
+                            <div class="text-info small">
+                                <i class="fas fa-info-circle me-1"></i> Apple HEIC/HEIF formats will be automatically converted to JPEG
+                            </div>
+                        </div>
+                        
+                        <!-- Image preview container -->
+                        <div class="text-center mb-3" id="preview-container" style="display: none;">
+                            <img src="" alt="Preview" class="upload-preview" id="image-preview">
+                            <div class="progress mt-2" style="height: 5px; display: none;">
+                                <div class="progress-bar upload-progress" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary upload-btn", id="upload-button") }}
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const uploadForm = document.getElementById('upload-form');
+        const imageInput = document.getElementById('image-input');
+        const previewContainer = document.getElementById('preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const uploadButton = document.getElementById('upload-button');
+        const progressBar = document.querySelector('.progress');
+        const progressBarInner = document.querySelector('.upload-progress');
+        
+        // Preview image when selected
+        if (imageInput) {
+            imageInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        imagePreview.src = e.target.result;
+                        imagePreview.style.display = 'block';
+                        previewContainer.style.display = 'block';
+                        
+                        // Display file information
+                        const file = imageInput.files[0];
+                        const fileInfo = document.createElement('div');
+                        fileInfo.className = 'mt-2 small text-muted';
+                        fileInfo.id = 'file-info';
+                        
+                        // Determine if it's an Apple format
+                        const isAppleFormat = /\.(heic|heif)$/i.test(file.name);
+                        
+                        fileInfo.innerHTML = `
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span><strong>File:</strong> ${file.name}</span>
+                                <span><strong>Size:</strong> ${(file.size / (1024 * 1024)).toFixed(2)} MB</span>
+                            </div>
+                            ${isAppleFormat ? 
+                                '<div class="text-info mt-1"><i class="fas fa-sync-alt me-1"></i> This Apple format will be converted to JPEG</div>' 
+                                : ''}
+                        `;
+                        
+                        // Remove existing info if any
+                        const existingInfo = document.getElementById('file-info');
+                        if (existingInfo) {
+                            existingInfo.remove();
+                        }
+                        
+                        previewContainer.appendChild(fileInfo);
+                        
+                        // Animate the preview appearance
+                        imagePreview.style.opacity = '0';
+                        setTimeout(() => {
+                            imagePreview.style.opacity = '1';
+                            imagePreview.style.transform = 'scale(1)';
+                        }, 50);
+                    };
+                    
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        }
+        
+        // Animation for upload button click
+        if (uploadForm) {
+            uploadForm.addEventListener('submit', function(e) {
+                if (uploadButton) {
+                    // Add visual feedback on form submission
+                    uploadForm.classList.add('submitting');
+                    uploadButton.classList.add('submitting');
+                    uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Uploading...';
+                    
+                    // Show progress bar animation
+                    if (progressBar) {
+                        progressBar.style.display = 'block';
+                        
+                        // Simulate upload progress (just for visual effect)
+                        let progress = 0;
+                        const interval = setInterval(() => {
+                            progress += Math.random() * 15;
+                            if (progress > 100) {
+                                progress = 100;
+                                clearInterval(interval);
+                            }
+                            progressBarInner.style.width = progress + '%';
+                        }, 200);
+                    }
+                }
+            });
+        }
+        
+        // Add ripple effect to all buttons
+        const buttons = document.querySelectorAll('.btn');
+        buttons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                const rect = button.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const ripple = document.createElement('span');
+                ripple.classList.add('ripple');
+                ripple.style.left = x + 'px';
+                ripple.style.top = y + 'px';
+                
+                this.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}ImageShare - Home{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1>Trending Images</h1>
+                <a href="{{ url_for('upload') }}" class="btn btn-primary">
+                    <i class="fas fa-upload me-2"></i>Upload Image
+                </a>
+            </div>
+            <p class="text-muted">Explore the most popular images shared by our community</p>
+        </div>
+    </div>
+
+    <div class="row">
+        {% if images %}
+            {% for image in images %}
+                <div class="col-md-4 col-sm-6 mb-4">
+                    <div class="card h-100">
+                        <a href="{{ url_for('image_details', image_id=image.id) }}">
+                            <img src="{{ url_for('uploaded_file', filename=image.filename) }}" 
+                                 class="card-img-top" alt="{{ image.title }}">
+                        </a>
+                        <div class="card-body">
+                            <h5 class="card-title">{{ image.title }}</h5>
+                            <p class="card-text text-truncate">{{ image.description or "No description provided" }}</p>
+                        </div>
+                        <div class="card-footer d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Uploaded on {{ image.upload_date.strftime("%Y-%m-%d") }}</small>
+                            <div class="likes" data-image-id="{{ image.id }}">
+                                <button class="btn btn-sm btn-outline-danger like-btn">
+                                    <i class="fas fa-heart"></i> <span class="like-count">{{ image.likes }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-image fa-5x mb-3 text-muted"></i>
+                    <h3>No images found</h3>
+                    <p class="text-muted">Be the first to upload an image!</p>
+                    <a href="{{ url_for('upload') }}" class="btn btn-primary mt-3">
+                        <i class="fas fa-upload me-2"></i>Upload Image
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
