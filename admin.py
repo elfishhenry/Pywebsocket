@@ -1,7 +1,7 @@
-#from models import db, User
-#user = User.query.filter_by(username='elfishhenry').first()
-#user.is_admin = True
-#db.session.commit()
+from models import db, User
+user = User.query.filter_by(username='elfishhenry').first()
+user.is_admin = True
+db.session.commit()
 
 
 # ONLY UNHASH THIS IF YOU ACTUALLY WANT TO THE BELOW ACTION.
@@ -16,4 +16,4 @@
 # THIS WILL DELETE ALL ACCOUNTS STORED IN THE DATABASE, NEVER DO THIS.
 #from models import db, User
 #User.query.delete()
-#db.session.commit()
+#db.session.commit() 
