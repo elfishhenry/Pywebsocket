@@ -37,7 +37,10 @@
                     <button class="btn btn-outline-light" type="submit">Search</button>
                 </form>
                 <div class="d-flex">
-                    {% if session.get('user_id') %}
+                    {% if current_user.is_authenticated %}
+                        <span class="navbar-text me-2">
+                            <i class="fas fa-user"></i> {{ current_user.username }}
+                        </span>
                         <a class="btn btn-outline-primary me-2" href="{{ url_for('settings') }}">Settings</a>
                         <a class="btn btn-outline-danger" href="{{ url_for('logout') }}">Logout</a>
                     {% else %}
